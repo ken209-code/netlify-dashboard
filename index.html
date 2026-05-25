@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ken's Projects Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #0e1117;
+            color: #ecf2f8;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .project-count {
+            background-color: #21262d;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #00d4b6;
+            border: 1px solid #30363d;
+        }
+
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .project-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            border-color: #00d4b6;
+        }
+
+        .project-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .project-thumb {
+            width: 130px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            background-color: #0e1117;
+            border: 1px solid #30363d;
+        }
+
+        .project-info h3 {
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .project-info p {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .btn-visit {
+            display: inline-block;
+            background-color: #21262d;
+            color: #c9d1d9;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #30363d;
+            transition: all 0.2s;
+        }
+
+        .btn-visit:hover {
+            background-color: #00d4b6;
+            color: #0e1117;
+            border-color: #00d4b6;
+        }
+
+        .loading {
+            text-align: center;
+            color: #8b949e;
+            font-size: 16px;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Dự Án Trên Netlify</h1>
+            <span class="project-count" id="count">Đang tải...</span>
+        </header>
+
+        <div class="project-list" id="projects-container">
+            <div class="loading">Đang đồng bộ danh sách dự án từ Netlify...</div>
+        </div>
+    </div>
+
+    <script>
+        // Token sẽ được lấy từ Snippet Injection bảo mật của Netlify chứ không ghi ở đây
+        const NETLIFY_TOKEN = '{{site.env.NETLIFY_TOKEN}}'; 
+
+        async function fetchNetlifyProjects() {
+            const container = document.getElementById('projects-container');
+            const countSpan = document.getElementById('count');
+
+            if (NETLIFY_TOKEN.startsWith('{{')) {
+                container.innerHTML = `<div class="loading" style="color: #ff7b72;">Bạn cần cấu hình Environment Variable trên Netlify trước!</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('https://api.netlify.com/api/v1/sites', {
+                    headers: { 'Authorization': `Bearer ${NETLIFY_TOKEN}` }
+                });
+
+                if (!response.ok) throw new Error('Mã Token không hợp lệ hoặc đã bị xóa.');
+
+                const sites = await response.json();
+                countSpan.innerText = `${sites.length} dự án`;
+                container.innerHTML = '';
+
+                sites.forEach(site => {
+                    // Bỏ qua chính trang tổng hợp này để không bị lặp lại trong danh sách
+                    if (site.name === window.location.hostname.split('.')[0]) return;
+
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    const deploySource = site.build_settings.provider ? `Deploys from ${site.build_settings.provider}` : 'Manual deploy';
+                    const thumbUrl = `https://api.netlify.com/api/v1/sites/${site.id}/screenshot.png`;
+
+                    card.innerHTML = `
+                        <div class="project-left">
+                            <img class="project-thumb" src="${thumbUrl}" onerror="this.src='https://api.netlify.com/api/v1/badges/${site.id}/deploy-status'" alt="${site.name}">
+                            <div class="project-info">
+                                <h3>${site.name}</h3>
+                                <p>${deploySource}</p>
+                            </div>
+                        </div>
+                        <div class="project-right">
+                            <a href="${site.ssl_url || site.url}" target="_blank" class="btn-visit">Xem trang web</a>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                if(container.innerHTML === '') {
+                    container.innerHTML = `<div class="loading">Chưa có dự án nào khác ngoài trang này.</div>`;
+                }
+
+            } catch (error) {
+                container.innerHTML = `<div class="loading" style="color: #ff7b72;">Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        fetchNetlifyProjects();
+    </script>
+</body>
+</html>
