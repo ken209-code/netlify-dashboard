@@ -139,7 +139,7 @@
 
     <script>
         // Token sẽ được lấy từ Snippet Injection bảo mật của Netlify chứ không ghi ở đây
-        const NETLIFY_TOKEN = '{{site.env.NETLIFY_TOKEN}}'; 
+       const NETLIFY_TOKEN = window.NETLIFY_TOKEN_DIRECT || '{{site.env.NETLIFY_TOKEN}}';
 
         async function fetchNetlifyProjects() {
             const container = document.getElementById('projects-container');
