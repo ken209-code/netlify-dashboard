@@ -173,7 +173,7 @@
 
                     card.innerHTML = `
                         <div class="project-left">
-                            <img class="project-thumb" src="https://api.netlify.com/api/v1/sites/${site.id}/screenshot" alt="${site.name}">
+                            <img class="project-thumb" src="https://api.microlink.io/?url=${site.url}&screenshot=true&embed=screenshot.url" alt="${site.name}">
                             <div class="project-info">
                                 <h3>${site.name}</h3>
                                 <p>${deploySource}</p>
